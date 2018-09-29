@@ -51,7 +51,7 @@ type GCloud struct {
 }
 
 type Azure struct {
-	ContainerName string `yaml:"containerName"`
+	ContainerName    string `yaml:"containerName"`
 	ConnectionString string `yaml:"connectionString"`
 }
 

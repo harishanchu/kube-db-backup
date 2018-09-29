@@ -8,11 +8,11 @@ import (
 	"syscall"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/stefanprodan/mgob/api"
-	"github.com/stefanprodan/mgob/backup"
-	"github.com/stefanprodan/mgob/config"
-	"github.com/stefanprodan/mgob/db"
-	"github.com/stefanprodan/mgob/scheduler"
+	"github.com/harishanchu/kube-db-backup/api"
+	"github.com/harishanchu/kube-db-backup/backup"
+	"github.com/harishanchu/kube-db-backup/config"
+	"github.com/harishanchu/kube-db-backup/db"
+	"github.com/harishanchu/kube-db-backup/scheduler"
 )
 
 var version = "undefined"

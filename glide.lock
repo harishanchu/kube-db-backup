@@ -1,5 +1,5 @@
-hash: 182fbb7e85303115a78f13d6cbd3e71caea139faca52ebc9aa85dc256b805b8a
-updated: 2017-07-29T17:09:23.420528308+03:00
+hash: 491800492b0dbdcb4ab38043a520af4719b9b59c40d90e14f71ac90eb7538246
+updated: 2018-09-29T21:40:37.119299729+05:30
 imports:
 - name: github.com/beorn7/perks
   version: 4c0e84591b9aa9e6dcfdf3e020114cd81f89d5f9
@@ -14,11 +14,11 @@ imports:
 - name: github.com/dustin/go-humanize
   version: 259d2a102b871d17f30e3cd9881a642961a1e486
 - name: github.com/go-chi/chi
-  version: b8567b6442e27704bfeb725095091581cbe82a00
+  version: b5294d10673813fac8558e7f47242bc9e61b4c25
   subpackages:
   - middleware
 - name: github.com/go-chi/render
-  version: 9f855fadd4b8cde7773f9ef51f6b2705af239519
+  version: 3215478343fbc559bd3fc08f7031bb134d6bdad5
 - name: github.com/golang/protobuf
   version: 18c9bb3261723cd5401db4d0c9fbc5c3b6c70fe8
   subpackages:

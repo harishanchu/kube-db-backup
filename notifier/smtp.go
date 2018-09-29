@@ -5,8 +5,8 @@ import (
 	"net/smtp"
 	"strings"
 
+	"github.com/harishanchu/kube-db-backup/config"
 	"github.com/pkg/errors"
-	"github.com/stefanprodan/mgob/config"
 )
 
 func sendEmailNotification(subject string, body string, config *config.SMTP) error {

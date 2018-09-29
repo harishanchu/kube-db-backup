@@ -6,7 +6,7 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
-	"github.com/stefanprodan/mgob/db"
+	"github.com/harishanchu/kube-db-backup/db"
 )
 
 type appStatus []*db.Status

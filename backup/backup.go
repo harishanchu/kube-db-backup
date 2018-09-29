@@ -8,8 +8,8 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/codeskyblue/go-sh"
+	"github.com/harishanchu/kube-db-backup/config"
 	"github.com/pkg/errors"
-	"github.com/stefanprodan/mgob/config"
 )
 
 func Run(plan config.Plan, tmpPath string, storagePath string) (Result, error) {

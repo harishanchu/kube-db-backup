@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/codeskyblue/go-sh"
+	"github.com/harishanchu/kube-db-backup/config"
 	"github.com/pkg/errors"
-	"github.com/stefanprodan/mgob/config"
 )
 
 func dump(plan config.Plan, tmpPath string, ts time.Time) (string, string, error) {

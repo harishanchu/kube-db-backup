@@ -10,9 +10,9 @@ import (
 	"github.com/dustin/go-humanize"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
-	"github.com/stefanprodan/mgob/backup"
-	"github.com/stefanprodan/mgob/config"
-	"github.com/stefanprodan/mgob/notifier"
+	"github.com/harishanchu/kube-db-backup/backup"
+	"github.com/harishanchu/kube-db-backup/config"
+	"github.com/harishanchu/kube-db-backup/notifier"
 )
 
 func configCtx(data config.AppConfig) func(next http.Handler) http.Handler {

@@ -6,13 +6,13 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/dustin/go-humanize"
+	"github.com/harishanchu/kube-db-backup/backup"
+	"github.com/harishanchu/kube-db-backup/config"
+	"github.com/harishanchu/kube-db-backup/db"
+	"github.com/harishanchu/kube-db-backup/metrics"
+	"github.com/harishanchu/kube-db-backup/notifier"
 	"github.com/pkg/errors"
 	"github.com/robfig/cron"
-	"github.com/stefanprodan/mgob/backup"
-	"github.com/stefanprodan/mgob/config"
-	"github.com/stefanprodan/mgob/db"
-	"github.com/stefanprodan/mgob/metrics"
-	"github.com/stefanprodan/mgob/notifier"
 )
 
 type Scheduler struct {

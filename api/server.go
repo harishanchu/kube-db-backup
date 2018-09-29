@@ -7,8 +7,8 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
-	"github.com/stefanprodan/mgob/config"
-	"github.com/stefanprodan/mgob/db"
+	"github.com/harishanchu/kube-db-backup/config"
+	"github.com/harishanchu/kube-db-backup/db"
 	"strings"
 )
 
@@ -44,7 +44,7 @@ func (s *HttpServer) Start(version string) {
 		r.Post("/{planID}", postBackup)
 	})
 
-	FileServer(r,"/storage", http.Dir(s.Config.StoragePath))
+	FileServer(r, "/storage", http.Dir(s.Config.StoragePath))
 
 	logrus.Error(http.ListenAndServe(fmt.Sprintf(":%v", s.Config.Port), r))
 }
