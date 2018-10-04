@@ -1,3 +1,4 @@
+type: 'mongo'
 target:
   host: "172.18.7.40"
   port: 27017
@@ -5,7 +6,7 @@ target:
   username: ""
   password: ""
 scheduler:
-  cron: "*/2 * * * *"
+  cron: "*/1 * * * *"
   retention: 5
   timeout: 60
 s3:

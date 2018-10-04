@@ -24,14 +24,14 @@ before_script:
 script:
   - make travis
   - sleep 60
-  - docker logs mgob
+  - docker logs kube-db-backup
   - curl http://localhost:8090/version
   - echo 'SFTP integration test'
-  - docker logs mgob 2>&1 | grep 'SFTP upload finished'
+  - docker logs kube-db-backup 2>&1 | grep 'SFTP upload finished'
   - echo 'S3 integration test'
-  - docker logs mgob 2>&1 | grep 'S3 upload finished'
+  - docker logs kube-db-backup 2>&1 | grep 'S3 upload finished'
   - echo 'Local backup integration test'
-  - docker logs mgob 2>&1 | grep 'Backup finished'
+  - docker logs kube-db-backup 2>&1 | grep 'Backup finished'
 
 after_success:
   - if [ -z "$DOCKER_USER" ]; then

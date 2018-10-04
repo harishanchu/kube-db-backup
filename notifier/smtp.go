@@ -11,7 +11,7 @@ import (
 
 func sendEmailNotification(subject string, body string, config *config.SMTP) error {
 
-	msg := "From: \"MGOB\" <" + config.From + ">\r\n" +
+	msg := "From: \"Kube-db-backup\" <" + config.From + ">\r\n" +
 		"To: " + strings.Join(config.To, ", ") + "\r\n" +
 		"Subject: " + subject + "\r\n\r\n" +
 		body + "\r\n"

@@ -12,7 +12,8 @@ import (
 
 type Plan struct {
 	Name      string    `yaml:"name"`
-	Target    Target    `yaml:"target"`
+	Type      string    `yaml:"type"`
+	Target map[string]string `yaml:"target"`
 	Scheduler Scheduler `yaml:"scheduler"`
 	S3        *S3       `yaml:"s3"`
 	GCloud    *GCloud   `yaml:"gcloud"`
@@ -20,15 +21,6 @@ type Plan struct {
 	SFTP      *SFTP     `yaml:"sftp"`
 	SMTP      *SMTP     `yaml:"smtp"`
 	Slack     *Slack    `yaml:"slack"`
-}
-
-type Target struct {
-	Database string `yaml:"database"`
-	Host     string `yaml:"host"`
-	Password string `yaml:"password"`
-	Port     int    `yaml:"port"`
-	Username string `yaml:"username"`
-	Params   string `yaml:"params"`
 }
 
 type Scheduler struct {

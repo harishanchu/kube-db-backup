@@ -10,13 +10,25 @@ import (
 	"github.com/codeskyblue/go-sh"
 	"github.com/harishanchu/kube-db-backup/config"
 	"github.com/pkg/errors"
+	"github.com/harishanchu/kube-db-backup/backup/jobs"
 )
 
 func Run(plan config.Plan, tmpPath string, storagePath string) (Result, error) {
 	t1 := time.Now()
 	planDir := fmt.Sprintf("%v/%v", storagePath, plan.Name)
+	var archive, log string
+	var err error
 
-	archive, log, err := dump(plan, tmpPath, t1.UTC())
+	switch plan.Type {
+	case "mongo":
+		archive, log, err = jobs.RunMongoBackup(plan, tmpPath, t1.UTC())
+	case "solr":
+		fmt.Println("Solr configuration file")
+	case "file":
+		fmt.Println("File configuration file")
+	}
+
+
 	res := Result{
 		Plan:      plan.Name,
 		Timestamp: t1.UTC(),
@@ -47,13 +59,6 @@ func Run(plan config.Plan, tmpPath string, storagePath string) (Result, error) {
 	err = sh.Command("mv", log, planDir).Run()
 	if err != nil {
 		return res, errors.Wrapf(err, "moving file from %v to %v failed", log, planDir)
-	}
-
-	if plan.Scheduler.Retention > 0 {
-		err = applyRetention(planDir, plan.Scheduler.Retention)
-		if err != nil {
-			return res, errors.Wrap(err, "retention job failed")
-		}
 	}
 
 	file := filepath.Join(planDir, res.Name)
@@ -91,6 +96,13 @@ func Run(plan config.Plan, tmpPath string, storagePath string) (Result, error) {
 			return res, err
 		} else {
 			logrus.WithField("plan", plan.Name).Infof("Azure upload finished %v", azureOutout)
+		}
+	}
+
+	if plan.Scheduler.Retention > -1 {
+		err = applyRetention(planDir, plan.Scheduler.Retention)
+		if err != nil {
+			return res, errors.Wrap(err, "retention job failed")
 		}
 	}
 

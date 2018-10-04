@@ -1,10 +1,11 @@
+type: 'mongo'
 target:
-  host: "172.18.7.40"
+  host: "localhost"
   port: 27017
-  database: "syros"
+  database: "PHR"
   username: ""
   password: ""
 scheduler:
-  cron: "*/3 * * * *"
-  retention: 5
+  cron: "*/1 * * * *"
+  retention: 0
   timeout: 1
