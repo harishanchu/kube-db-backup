@@ -18,12 +18,13 @@ func Run(plan config.Plan, tmpPath string, storagePath string) (Result, error) {
 	planDir := fmt.Sprintf("%v/%v", storagePath, plan.Name)
 	var archive, log string
 	var err error
+	var filePostFix = formatTimeForFilePostFix(t1.UTC());
 
 	switch plan.Type {
 	case "mongo":
-		archive, log, err = jobs.RunMongoBackup(plan, tmpPath, t1.UTC())
+		archive, log, err = jobs.RunMongoBackup(plan, tmpPath, filePostFix)
 	case "solr":
-		fmt.Println("Solr configuration file")
+		archive, log, err = jobs.RunSolrBackup(plan, tmpPath, filePostFix)
 	case "file":
 		fmt.Println("File configuration file")
 	}
@@ -110,4 +111,8 @@ func Run(plan config.Plan, tmpPath string, storagePath string) (Result, error) {
 	res.Status = 200
 	res.Duration = t2.Sub(t1)
 	return res, nil
+}
+
+func formatTimeForFilePostFix(t time.Time) string {
+	return t.Format("20060102030405000")
 }

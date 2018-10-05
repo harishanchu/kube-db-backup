@@ -9,9 +9,9 @@ import (
 	"github.com/pkg/errors"
 )
 
-func RunMongoBackup(plan config.Plan, tmpPath string, ts time.Time) (string, string, error) {
-	archive := fmt.Sprintf("%v/%v-%v.gz", tmpPath, plan.Name, formatTimeForFilePostFix(ts))
-	log := fmt.Sprintf("%v/%v-%v.log", tmpPath, plan.Name, formatTimeForFilePostFix(ts))
+func RunMongoBackup(plan config.Plan, tmpPath string, filePostFix string) (string, string, error) {
+	archive := fmt.Sprintf("%v/%v-%v.gz", tmpPath, plan.Name, filePostFix)
+	log := fmt.Sprintf("%v/%v-%v.log", tmpPath, plan.Name, filePostFix)
 
 	dump := fmt.Sprintf("mongodump --archive=%v --gzip --host %v --port %v ",
 		archive, plan.Target["host"], plan.Target["port"])
@@ -36,8 +36,4 @@ func RunMongoBackup(plan config.Plan, tmpPath string, ts time.Time) (string, str
 	logToFile(log, output)
 
 	return archive, log, nil
-}
-
-func formatTimeForFilePostFix(t time.Time) string {
-	return t.Format("20060102030405000")
 }

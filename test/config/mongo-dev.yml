@@ -6,6 +6,6 @@ target:
   username: ""
   password: ""
 scheduler:
-  cron: "*/1 * * * *"
+  cron: "*/30 * * * *"
   retention: 0
   timeout: 1

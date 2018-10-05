@@ -3,7 +3,7 @@ target:
   pod: "mpi-nginx"
   path: "/var/log/nginx"
 scheduler:
-  cron: "*/1 * * * *"
+  cron: "*/30 * * * *"
   retention: 5
   timeout: 60
 s3:

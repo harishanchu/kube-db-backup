@@ -1,5 +1,5 @@
-hash: 491800492b0dbdcb4ab38043a520af4719b9b59c40d90e14f71ac90eb7538246
-updated: 2018-10-04T12:10:33.060180793+05:30
+hash: e49757185c3c7da5b2847a28b77392d289ddb13568e67c8e6b1e040ed16d67d3
+updated: 2018-10-05T13:33:11.945257142+05:30
 imports:
 - name: github.com/beorn7/perks
   version: 3a771d992973f24aa725d07868b467d1ddfceafb
@@ -56,8 +56,16 @@ imports:
   - xfs
 - name: github.com/robfig/cron
   version: df38d32658d8788cd446ba74db4bb5375c4b0cb3
+- name: github.com/samuel/go-zookeeper
+  version: c4fab1ac1bec58281ad0667dc3f0907a9476ac47
+  subpackages:
+  - zk
+- name: github.com/sendgrid/go-solr
+  version: a26935b88e8c6da7f4c2b8a004374e4ce01732b9
 - name: github.com/Sirupsen/logrus
   version: ba1b36c82c5e05c4f912a88eab0dcd91a171688f
+- name: github.com/spaolacci/murmur3
+  version: f09979ecbc725b9e6d41a297405f65e7e8804acc
 - name: golang.org/x/crypto
   version: e3636079e1a4c1f337f212cc5cd2aca108f6c900
   subpackages:

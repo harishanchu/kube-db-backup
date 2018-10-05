@@ -13,6 +13,7 @@ import (
 	"github.com/harishanchu/kube-db-backup/db"
 	"github.com/harishanchu/kube-db-backup/scheduler"
 	"github.com/harishanchu/kube-db-backup/backup"
+	"github.com/harishanchu/kube-db-backup/backup/jobs"
 )
 
 var version = "undefined"
@@ -32,6 +33,8 @@ func main() {
 	//verifyApplicationEnvironment()
 
 	plans, err := config.LoadPlans(appConfig.ConfigPath)
+	jobs.RunSolrBackup(plans[0], "", "")
+	return
 	if err != nil {
 		logrus.Fatal(err)
 	}
