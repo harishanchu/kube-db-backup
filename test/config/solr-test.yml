@@ -1,6 +1,6 @@
 type: 'solr'
 target:
-  zkHost: "localhost:2189"
+  zkHost: "localhost:2181"
   collection: "mpi"
 scheduler:
   cron: "*/1 * * * *"

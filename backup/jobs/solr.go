@@ -6,12 +6,35 @@ import (
 	"github.com/sendgrid/go-solr"
 	"net"
 	"github.com/codeskyblue/go-sh"
+	"net/http"
+	"io/ioutil"
+	"encoding/json"
 )
 
 type PodToBackup struct {
-	BaseURL      string
-	podName      string
-	podNameSpace string
+	BaseURL       string
+	podName       string
+	podNameSpace  string
+	BackupSuccess bool
+}
+
+type SolrBackupResponse struct {
+	Status string `json:"status"`
+	ResponseHeader struct {
+		Status int `json:"status"`
+		QTime  int `json:"QTime"`
+	} `json:"response"`
+	Exception string `json:"exception"`
+}
+
+type SolrReplicaDetailsResponse struct {
+	ResponseHeader struct {
+		Status int `json:"status"`
+		QTime  int `json:"QTime"`
+	} `json:"response"`
+	Details map[string]interface{
+	} `json:"details"`
+	Exception string `json:"exception"`
 }
 
 func RunSolrBackup(plan config.Plan, tmpPath string, filePostFix string) (string, string, error) {
@@ -30,20 +53,20 @@ func RunSolrBackup(plan config.Plan, tmpPath string, filePostFix string) (string
 	} else {
 		state, err := solrZk.GetClusterState()
 		state = solr.ClusterState{
-			make([]string,0),
+			make([]string, 0),
 			1,
-			map[string]solr.Collection {
+			map[string]solr.Collection{
 				"mpi": solr.Collection{
-					map[string] solr.Shard {
+					map[string]solr.Shard{
 						"shard1": solr.Shard{
 							"test",
 							"sddsf",
 							"active",
-							map[string] solr.Replica {
-								"replica1": solr.Replica {
+							map[string]solr.Replica{
+								"replica1": solr.Replica{
 									"hello",
 									"true",
-									"testurl",
+									"http://localhost:8983/solr",
 									"testurl",
 									"active",
 								},
@@ -62,7 +85,32 @@ func RunSolrBackup(plan config.Plan, tmpPath string, filePostFix string) (string
 		}
 	}
 
-	print(podsToBackup)
+	httpClient := &http.Client{}
+
+	for _, pod := range podsToBackup {
+		resp, err := InitiateReplicaBackup(httpClient, pod.BaseURL, solrCollection)
+
+		if (err != nil || resp.Exception != "") {
+		}
+	}
+
+	for len(podsToBackup) > 0 {
+		for index, pod := range podsToBackup {
+			resp, err := CheckReplicaBackupStatus(httpClient, pod.BaseURL, solrCollection)
+
+			if (err != nil || resp.Exception != "") {
+			} else {
+				//backupStatus := reflect.ValueOf(resp.Details["backup"])
+				//e := backupStatus.Index(5).Elem()
+				//fmt.Print(reflect.TypeOf(e))
+				//if backupStatus.Index(5).String() == "success" {
+					podsToBackup = append(podsToBackup[:index], podsToBackup[index+1:]...)
+				//} else {
+				//	fmt.Print(backupStatus.Index(5).String())
+				//}
+			}
+		}
+	}
 
 	return archive, log, nil
 }
@@ -105,6 +153,7 @@ func RetrievePodsToBackup(shards map[string]solr.Shard) []PodToBackup {
 								replica.BaseURL,
 								string(podName),
 								string(podNameSpace),
+								false,
 							}
 
 							podsToBackup = append(podsToBackup, podToBackup)
@@ -117,4 +166,65 @@ func RetrievePodsToBackup(shards map[string]solr.Shard) []PodToBackup {
 	}
 
 	return podsToBackup
+}
+
+func InitiateReplicaBackup(httpClient *http.Client, nodeUri string, collection string) (SolrBackupResponse, error) {
+	backupUrl := fmt.Sprintf("%s/%s/replication?command=backup&wt=json", nodeUri, collection)
+	req, err := http.NewRequest("GET", backupUrl, nil)
+	var sr SolrBackupResponse
+
+	if err != nil {
+		return sr, err
+	}
+
+	req.Header.Add("Content-Type", "application/json")
+	resp, err := httpClient.Do(req)
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		htmlData, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return sr, err
+		}
+
+		if resp.StatusCode < 500 {
+			return sr, solr.NewSolrError(resp.StatusCode, string(htmlData))
+		} else {
+			return sr, solr.NewSolrInternalError(resp.StatusCode, string(htmlData))
+		}
+	}
+
+	dec := json.NewDecoder(resp.Body)
+
+	return sr, dec.Decode(&sr)
+}
+
+func CheckReplicaBackupStatus (httpClient *http.Client, nodeUri string, collection string) (SolrReplicaDetailsResponse, error) {
+	replicaDetailsUrl := fmt.Sprintf("%s/%s/replication?command=details&wt=json", nodeUri, collection)
+	req, err := http.NewRequest("GET", replicaDetailsUrl, nil)
+	var sr SolrReplicaDetailsResponse
+
+	if err != nil {
+		return sr, err
+	}
+
+	resp, err := httpClient.Do(req)
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		htmlData, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return sr, err
+		}
+
+		if resp.StatusCode < 500 {
+			return sr, solr.NewSolrError(resp.StatusCode, string(htmlData))
+		} else {
+			return sr, solr.NewSolrInternalError(resp.StatusCode, string(htmlData))
+		}
+	}
+
+	dec := json.NewDecoder(resp.Body)
+
+	return sr, dec.Decode(&sr)
 }
