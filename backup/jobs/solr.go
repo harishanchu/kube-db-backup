@@ -9,6 +9,9 @@ import (
 	"net/http"
 	"io/ioutil"
 	"encoding/json"
+	"time"
+	"errors"
+	"os"
 )
 
 type PodToBackup struct {
@@ -16,6 +19,7 @@ type PodToBackup struct {
 	podName       string
 	podNameSpace  string
 	BackupSuccess bool
+	ShardName     string
 }
 
 type SolrBackupResponse struct {
@@ -32,17 +36,19 @@ type SolrReplicaDetailsResponse struct {
 		Status int `json:"status"`
 		QTime  int `json:"QTime"`
 	} `json:"response"`
-	Details map[string]interface{
+	Details map[string]interface {
 	} `json:"details"`
 	Exception string `json:"exception"`
 }
 
 func RunSolrBackup(plan config.Plan, tmpPath string, filePostFix string) (string, string, error) {
-	archive := fmt.Sprintf("%v/%v-%v.gz", tmpPath, plan.Name, filePostFix)
+	backupLocation := fmt.Sprintf("%v/%v-%v", tmpPath, plan.Name, filePostFix)
+	archive := backupLocation + ".gz"
 	log := fmt.Sprintf("%v/%v-%v.log", tmpPath, plan.Name, filePostFix)
-
 	zkHost := plan.Target["zkHost"];
 	solrCollection := plan.Target["collection"]
+	remoteBackupLocation := "/tmp"
+	remoteBackupName := filePostFix
 
 	solrZk, err := CreateSolrCloudConnection(zkHost, solrCollection)
 
@@ -88,28 +94,40 @@ func RunSolrBackup(plan config.Plan, tmpPath string, filePostFix string) (string
 	httpClient := &http.Client{}
 
 	for _, pod := range podsToBackup {
-		resp, err := InitiateReplicaBackup(httpClient, pod.BaseURL, solrCollection)
+		resp, err := InitiateReplicaBackup(httpClient, pod.BaseURL, solrCollection, remoteBackupLocation, remoteBackupName)
 
-		if (err != nil || resp.Exception != "") {
+		if err != nil {
+			return archive, log, err;
+		} else if resp.Exception != "" {
+			return archive, log, errors.New(resp.Exception)
+		} else {
+			status := ""
+
+			for status != "success" {
+				time.Sleep(5 * time.Second)
+				status, err = CheckReplicaBackupStatus(httpClient, pod.BaseURL, solrCollection, remoteBackupName)
+			}
+
+			shardBackupLocation := fmt.Sprintf("%v/%v", backupLocation, pod.ShardName)
+			err := RetrieveBackup(pod.podName, pod.podNameSpace, shardBackupLocation, remoteBackupLocation, remoteBackupName)
+
+			if (err != nil) {
+				return archive, log, err;
+			}
 		}
 	}
 
-	for len(podsToBackup) > 0 {
-		for index, pod := range podsToBackup {
-			resp, err := CheckReplicaBackupStatus(httpClient, pod.BaseURL, solrCollection)
+	// create archive
+	createArchiveCommand := fmt.Sprintf("tar -czf %v %v", archive, backupLocation)
+	err = sh.Command("/bin/sh", "-c", createArchiveCommand).Run()
 
-			if (err != nil || resp.Exception != "") {
-			} else {
-				//backupStatus := reflect.ValueOf(resp.Details["backup"])
-				//e := backupStatus.Index(5).Elem()
-				//fmt.Print(reflect.TypeOf(e))
-				//if backupStatus.Index(5).String() == "success" {
-					podsToBackup = append(podsToBackup[:index], podsToBackup[index+1:]...)
-				//} else {
-				//	fmt.Print(backupStatus.Index(5).String())
-				//}
-			}
-		}
+	if os.RemoveAll(backupLocation) != nil {
+		// show warning
+	}
+
+	// cleanup
+	if err != nil {
+		return archive, log, err
 	}
 
 	return archive, log, nil
@@ -154,6 +172,7 @@ func RetrievePodsToBackup(shards map[string]solr.Shard) []PodToBackup {
 								string(podName),
 								string(podNameSpace),
 								false,
+								shard.Name,
 							}
 
 							podsToBackup = append(podsToBackup, podToBackup)
@@ -168,8 +187,9 @@ func RetrievePodsToBackup(shards map[string]solr.Shard) []PodToBackup {
 	return podsToBackup
 }
 
-func InitiateReplicaBackup(httpClient *http.Client, nodeUri string, collection string) (SolrBackupResponse, error) {
-	backupUrl := fmt.Sprintf("%s/%s/replication?command=backup&wt=json", nodeUri, collection)
+func InitiateReplicaBackup(httpClient *http.Client, nodeUri, collection, backupLocation, backupName string) (SolrBackupResponse, error) {
+	backupUrl := fmt.Sprintf("%s/%s/replication?command=backup&wt=json&location=%s&name=%s",
+		nodeUri, collection, backupLocation, backupName)
 	req, err := http.NewRequest("GET", backupUrl, nil)
 	var sr SolrBackupResponse
 
@@ -199,13 +219,14 @@ func InitiateReplicaBackup(httpClient *http.Client, nodeUri string, collection s
 	return sr, dec.Decode(&sr)
 }
 
-func CheckReplicaBackupStatus (httpClient *http.Client, nodeUri string, collection string) (SolrReplicaDetailsResponse, error) {
+func CheckReplicaBackupStatus(httpClient *http.Client, nodeUri, collection, backupName string) (string, error) {
 	replicaDetailsUrl := fmt.Sprintf("%s/%s/replication?command=details&wt=json", nodeUri, collection)
 	req, err := http.NewRequest("GET", replicaDetailsUrl, nil)
+	status := ""
 	var sr SolrReplicaDetailsResponse
 
 	if err != nil {
-		return sr, err
+		return status, err
 	}
 
 	resp, err := httpClient.Do(req)
@@ -214,17 +235,51 @@ func CheckReplicaBackupStatus (httpClient *http.Client, nodeUri string, collecti
 	if resp.StatusCode != 200 {
 		htmlData, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			return sr, err
+			return status, err
 		}
 
 		if resp.StatusCode < 500 {
-			return sr, solr.NewSolrError(resp.StatusCode, string(htmlData))
+			return status, solr.NewSolrError(resp.StatusCode, string(htmlData))
 		} else {
-			return sr, solr.NewSolrInternalError(resp.StatusCode, string(htmlData))
+			return status, solr.NewSolrInternalError(resp.StatusCode, string(htmlData))
 		}
 	}
 
 	dec := json.NewDecoder(resp.Body)
 
-	return sr, dec.Decode(&sr)
+	err = dec.Decode(&sr)
+
+	if val, ok := sr.Details["backup"]; ok {
+		status = val.([]interface{})[5].(string)
+		backupNameFromResponse := val.([]interface{})[9].(string)
+
+		if backupNameFromResponse != backupName {
+			status = "InProgress"
+		}
+	}
+
+	return status, err
+}
+
+func RetrieveBackup(podName, podNameSpace, backupLocation, remoteBackupLocation, remoteBackupName string) error {
+	careateBkpDirCmd := fmt.Sprintf("mkdir -p %v", backupLocation)
+	backupCopyCmd := fmt.Sprintf("kubectl -n %v cp %v:%v/snapshot.%v %v", podNameSpace, podName,
+		remoteBackupLocation, remoteBackupName, backupLocation)
+	backupRemoteCleanCmd := fmt.Sprintf("kubectl -n %v exec -it %v -- sh -c \"rm -rf %v/snapshot.%v\"", podNameSpace, podName,
+		remoteBackupLocation, remoteBackupName)
+
+	err := sh.Command("/bin/sh", "-c", careateBkpDirCmd).Run()
+
+	if err != nil {
+		return err
+	} else {
+		err = sh.Command("/bin/sh", "-c", backupCopyCmd).Run()
+
+		// cleanup
+		if sh.Command("/bin/sh", "-c", backupRemoteCleanCmd).Run() != nil {
+			// show warning
+		}
+
+		return err;
+	}
 }
