@@ -29,7 +29,7 @@ func New(plans []config.Plan, conf *config.AppConfig, stats *db.StatusStore) *Sc
 		Plans:   plans,
 		Config:  conf,
 		Stats:   stats,
-		metrics: metrics.New("mgob", "scheduler"),
+		metrics: metrics.New("kubedbbackup", "scheduler"),
 	}
 
 	return s

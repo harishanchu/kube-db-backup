@@ -13,8 +13,6 @@ import (
 	"github.com/harishanchu/kube-db-backup/db"
 	"github.com/harishanchu/kube-db-backup/scheduler"
 	"github.com/harishanchu/kube-db-backup/backup"
-	"github.com/harishanchu/kube-db-backup/backup/jobs"
-	"time"
 )
 
 var version = "undefined"
@@ -34,8 +32,7 @@ func main() {
 	//verifyApplicationEnvironment()
 
 	plans, err := config.LoadPlans(appConfig.ConfigPath)
-	jobs.RunSolrBackup(plans[0], "/tmp", time.Now().UTC().Format("20060102030405000"))
-	return
+
 	if err != nil {
 		logrus.Fatal(err)
 	}

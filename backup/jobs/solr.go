@@ -49,6 +49,7 @@ func RunSolrBackup(plan config.Plan, tmpPath string, filePostFix string) (string
 	solrCollection := plan.Target["collection"]
 	remoteBackupLocation := "/tmp"
 	remoteBackupName := filePostFix
+	var commandOutput []byte
 
 	solrZk, err := CreateSolrCloudConnection(zkHost, solrCollection)
 
@@ -92,8 +93,10 @@ func RunSolrBackup(plan config.Plan, tmpPath string, filePostFix string) (string
 	}
 
 	httpClient := &http.Client{}
+	backupTimeout := time.Duration(plan.Scheduler.Timeout) * time.Minute
 
 	for _, pod := range podsToBackup {
+		t1 := time.Now()
 		resp, err := InitiateReplicaBackup(httpClient, pod.BaseURL, solrCollection, remoteBackupLocation, remoteBackupName)
 
 		if err != nil {
@@ -104,12 +107,16 @@ func RunSolrBackup(plan config.Plan, tmpPath string, filePostFix string) (string
 			status := ""
 
 			for status != "success" {
+				if(time.Now().Sub(t1) > backupTimeout) {
+					return archive, log, errors.New("Backup execution timedout")
+				}
+
 				time.Sleep(5 * time.Second)
 				status, err = CheckReplicaBackupStatus(httpClient, pod.BaseURL, solrCollection, remoteBackupName)
 			}
 
 			shardBackupLocation := fmt.Sprintf("%v/%v", backupLocation, pod.ShardName)
-			err := RetrieveBackup(pod.podName, pod.podNameSpace, shardBackupLocation, remoteBackupLocation, remoteBackupName)
+			err := RetrieveBackup(pod.podName, pod.podNameSpace, shardBackupLocation, remoteBackupLocation, remoteBackupName, log)
 
 			if (err != nil) {
 				return archive, log, err;
@@ -119,7 +126,8 @@ func RunSolrBackup(plan config.Plan, tmpPath string, filePostFix string) (string
 
 	// create archive
 	createArchiveCommand := fmt.Sprintf("tar -czf %v %v", archive, backupLocation)
-	err = sh.Command("/bin/sh", "-c", createArchiveCommand).Run()
+	commandOutput, err = sh.Command("/bin/sh", "-c", createArchiveCommand).CombinedOutput()
+	logToFile(log, commandOutput)
 
 	if os.RemoveAll(backupLocation) != nil {
 		// show warning
@@ -261,19 +269,21 @@ func CheckReplicaBackupStatus(httpClient *http.Client, nodeUri, collection, back
 	return status, err
 }
 
-func RetrieveBackup(podName, podNameSpace, backupLocation, remoteBackupLocation, remoteBackupName string) error {
+func RetrieveBackup(podName, podNameSpace, backupLocation, remoteBackupLocation, remoteBackupName, logFile string) error {
 	careateBkpDirCmd := fmt.Sprintf("mkdir -p %v", backupLocation)
 	backupCopyCmd := fmt.Sprintf("kubectl -n %v cp %v:%v/snapshot.%v %v", podNameSpace, podName,
 		remoteBackupLocation, remoteBackupName, backupLocation)
-	backupRemoteCleanCmd := fmt.Sprintf("kubectl -n %v exec -it %v -- sh -c \"rm -rf %v/snapshot.%v\"", podNameSpace, podName,
+	backupRemoteCleanCmd := fmt.Sprintf("kubectl -n %v exec -i %v -- sh -c \"rm -rf %v/snapshot.%v\"", podNameSpace, podName,
 		remoteBackupLocation, remoteBackupName)
 
-	err := sh.Command("/bin/sh", "-c", careateBkpDirCmd).Run()
+	commandOutput, err := sh.Command("/bin/sh", "-c", careateBkpDirCmd).CombinedOutput()
+	logToFile(logFile, commandOutput)
 
 	if err != nil {
 		return err
 	} else {
-		err = sh.Command("/bin/sh", "-c", backupCopyCmd).Run()
+		commandOutput, err = sh.Command("/bin/sh", "-c", backupCopyCmd).CombinedOutput()
+		logToFile(logFile, commandOutput)
 
 		// cleanup
 		if sh.Command("/bin/sh", "-c", backupRemoteCleanCmd).Run() != nil {
