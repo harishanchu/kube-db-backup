@@ -8,11 +8,11 @@ import (
 	"syscall"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/harishanchu/kube-db-backup/api"
-	"github.com/harishanchu/kube-db-backup/config"
-	"github.com/harishanchu/kube-db-backup/db"
-	"github.com/harishanchu/kube-db-backup/scheduler"
-	"github.com/harishanchu/kube-db-backup/backup"
+	"github.com/harishanchu/kube-backup/api"
+	"github.com/harishanchu/kube-backup/config"
+	"github.com/harishanchu/kube-backup/db"
+	"github.com/harishanchu/kube-backup/scheduler"
+	"github.com/harishanchu/kube-backup/backup"
 )
 
 var version = "undefined"
@@ -21,10 +21,10 @@ func main() {
 	var appConfig = &config.AppConfig{}
 	flag.StringVar(&appConfig.LogLevel, "LogLevel", "debug", "logging threshold level: debug|info|warn|error|fatal|panic")
 	flag.IntVar(&appConfig.Port, "Port", 8090, "HTTP port to listen on")
-	flag.StringVar(&appConfig.ConfigPath, "ConfigPath", "/kube-db-backup/config", "plan yml files dir")
-	flag.StringVar(&appConfig.StoragePath, "StoragePath", "/kube-db-backup/storage", "backup storage")
+	flag.StringVar(&appConfig.ConfigPath, "ConfigPath", "/kube-backup/config", "plan yml files dir")
+	flag.StringVar(&appConfig.StoragePath, "StoragePath", "/kube-backup/storage", "backup storage")
 	flag.StringVar(&appConfig.TmpPath, "TmpPath", "/tmp", "temporary backup storage")
-	flag.StringVar(&appConfig.DataPath, "DataPath", "/kube-db-backup/data", "db dir")
+	flag.StringVar(&appConfig.DataPath, "DataPath", "/kube-backup/data", "db dir")
 	flag.Parse()
 	setLogLevel(appConfig.LogLevel)
 	logrus.Infof("Starting with config: %+v", appConfig)
@@ -32,6 +32,12 @@ func main() {
 	//verifyApplicationEnvironment()
 
 	plans, err := config.LoadPlans(appConfig.ConfigPath)
+	//plan := plans[0]
+	//archive, log, nil := jobs.RunFileBackup(plan, "/tmp", "helo")
+	//if archive != "" && log != "" {
+	//
+	//}
+	//return;
 
 	if err != nil {
 		logrus.Fatal(err)

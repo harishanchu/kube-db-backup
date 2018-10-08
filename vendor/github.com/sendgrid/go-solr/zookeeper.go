@@ -22,6 +22,7 @@ type stateChanged func([]byte, error)
 type Zookeeper interface {
 	IsConnected() bool
 	Connect() error
+	Close()
 	GetConnectionString() string
 	Get(path string) ([]byte, int, error)
 	Poll(path string, cb stateChanged)
@@ -52,6 +53,11 @@ func (z *zookeeper) Connect() error {
 	z.zkConnection = zkConnection
 	return nil
 }
+
+func (z *zookeeper) Close() {
+	z.zkConnection.Close()
+}
+
 func (z *zookeeper) ZKLogger(l Logger) {
 	if z.zkConnection != nil {
 		z.zkConnection.SetLogger(l)

@@ -29,6 +29,7 @@ func (s *solrZkInstance) Listen() error {
 	if err != nil {
 		return err
 	}
+	s.listening = true
 	//loop forever
 	go func() {
 		log := s.logger
@@ -36,7 +37,7 @@ func (s *solrZkInstance) Listen() error {
 		logErr := func(err error) {
 			log.Error(fmt.Errorf("[go-solr] Error connecting to zk %v sleeping: %d", err, sleepTime))
 		}
-		for {
+		for s.listening==true {
 			shouldReconnect := false
 			select {
 			case cEvent := <-collectionsEvents:
@@ -91,8 +92,11 @@ func (s *solrZkInstance) Listen() error {
 			}
 		}
 	}()
-	s.listening = true
 	return nil
+}
+func (s *solrZkInstance) StopListeningAndCloseConnection () {
+	s.listening = false
+	s.zookeeper.Close()
 }
 func isConnectionClosed(err error) bool {
 	return err == zk.ErrClosing || err == zk.ErrConnectionClosed

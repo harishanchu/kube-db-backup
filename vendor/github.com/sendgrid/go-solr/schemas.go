@@ -15,6 +15,7 @@ type SolrZK interface {
 	GetClusterState() (ClusterState, error)
 	GetClusterProps() (ClusterProps, error)
 	Listen() error
+	StopListeningAndCloseConnection()
 	Listening() bool
 	GetSolrLocator() SolrLocator
 	UseHTTPS() (bool, error)

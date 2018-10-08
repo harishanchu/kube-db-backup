@@ -1,7 +1,7 @@
 package jobs
 
 import (
-	"github.com/harishanchu/kube-db-backup/config"
+	"github.com/harishanchu/kube-backup/config"
 	"time"
 	"fmt"
 	"github.com/codeskyblue/go-sh"
@@ -14,15 +14,15 @@ func RunMongoBackup(plan config.Plan, tmpPath string, filePostFix string) (strin
 	log := fmt.Sprintf("%v/%v-%v.log", tmpPath, plan.Name, filePostFix)
 
 	dump := fmt.Sprintf("mongodump --archive=%v --gzip --host %v --port %v ",
-		archive, plan.Target["host"], plan.Target["port"])
+		archive, plan.Target["host"].(string), plan.Target["port"].(string))
 	if plan.Target["database"] != "" {
 		dump += fmt.Sprintf("--db %v ", plan.Target["database"])
 	}
-	if plan.Target["username"] != "" && plan.Target["password"] != "" {
-		dump += fmt.Sprintf("-u %v -p %v ", plan.Target["username"], plan.Target["password"])
+	if plan.Target["username"].(string) != "" && plan.Target["password"].(string) != "" {
+		dump += fmt.Sprintf("-u %v -p %v ", plan.Target["username"].(string), plan.Target["password"].(string))
 	}
-	if plan.Target["params"] != "" {
-		dump += fmt.Sprintf("%v", plan.Target["params"])
+	if plan.Target["params"].(string) != "" {
+		dump += fmt.Sprintf("%v", plan.Target["params"].(string))
 	}
 
 	output, err := sh.Command("/bin/sh", "-c", dump).SetTimeout(time.Duration(plan.Scheduler.Timeout) * time.Minute).CombinedOutput()

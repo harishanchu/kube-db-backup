@@ -13,7 +13,7 @@ import (
 type Plan struct {
 	Name      string    `yaml:"name"`
 	Type      string    `yaml:"type"`
-	Target map[string]string `yaml:"target"`
+	Target map[string]interface{} `yaml:"target"`
 	Scheduler Scheduler `yaml:"scheduler"`
 	S3        *S3       `yaml:"s3"`
 	GCloud    *GCloud   `yaml:"gcloud"`

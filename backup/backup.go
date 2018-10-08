@@ -8,9 +8,9 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/codeskyblue/go-sh"
-	"github.com/harishanchu/kube-db-backup/config"
+	"github.com/harishanchu/kube-backup/config"
 	"github.com/pkg/errors"
-	"github.com/harishanchu/kube-db-backup/backup/jobs"
+	"github.com/harishanchu/kube-backup/backup/jobs"
 )
 
 func Run(plan config.Plan, tmpPath string, storagePath string) (Result, error) {

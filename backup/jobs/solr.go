@@ -1,7 +1,7 @@
 package jobs
 
 import (
-	"github.com/harishanchu/kube-db-backup/config"
+	"github.com/harishanchu/kube-backup/config"
 	"fmt"
 	"github.com/sendgrid/go-solr"
 	"net"
@@ -45,51 +45,20 @@ func RunSolrBackup(plan config.Plan, tmpPath string, filePostFix string) (string
 	backupLocation := fmt.Sprintf("%v/%v-%v", tmpPath, plan.Name, filePostFix)
 	archive := backupLocation + ".gz"
 	log := fmt.Sprintf("%v/%v-%v.log", tmpPath, plan.Name, filePostFix)
-	zkHost := plan.Target["zkHost"];
-	solrCollection := plan.Target["collection"]
+	zkHost := plan.Target["zkHost"].(string);
+	solrCollection := plan.Target["collection"].(string)
 	remoteBackupLocation := "/tmp"
 	remoteBackupName := filePostFix
 	var commandOutput []byte
 
-	solrZk, err := CreateSolrCloudConnection(zkHost, solrCollection)
-
 	podsToBackup := make([]PodToBackup, 0)
 
+	state, err := GetClusterState(zkHost, solrCollection)
+
 	if err != nil {
-
+		return archive, log, err
 	} else {
-		state, err := solrZk.GetClusterState()
-		state = solr.ClusterState{
-			make([]string, 0),
-			1,
-			map[string]solr.Collection{
-				"mpi": solr.Collection{
-					map[string]solr.Shard{
-						"shard1": solr.Shard{
-							"test",
-							"sddsf",
-							"active",
-							map[string]solr.Replica{
-								"replica1": solr.Replica{
-									"hello",
-									"true",
-									"http://localhost:8983/solr",
-									"testurl",
-									"active",
-								},
-							},
-						},
-					},
-					"123",
-				},
-			},
-		}
-
-		if err != nil {
-
-		} else {
-			podsToBackup = RetrievePodsToBackup(state.Collections[solrCollection].Shards)
-		}
+		podsToBackup = RetrievePodsToBackup(state.Collections[solrCollection].Shards)
 	}
 
 	httpClient := &http.Client{}
@@ -141,14 +110,15 @@ func RunSolrBackup(plan config.Plan, tmpPath string, filePostFix string) (string
 	return archive, log, nil
 }
 
-func CreateSolrCloudConnection(host, collection string) (solr.SolrZK, error) {
+func GetClusterState(host, collection string) (solr.ClusterState, error) {
 	var solrzk = solr.NewSolrZK(host, "", collection)
 	var err = solrzk.Listen()
 
+	defer solrzk.StopListeningAndCloseConnection()
 	if err != nil {
-		return nil, err
+		return solr.ClusterState{}, err
 	} else {
-		return solrzk, nil
+		return solrzk.GetClusterState()
 	}
 }
 
