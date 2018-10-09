@@ -5,47 +5,68 @@ import (
 	"fmt"
 	"github.com/codeskyblue/go-sh"
 	"strings"
+	"os"
+	"errors"
 )
 
 func RunFileBackup(plan config.Plan, tmpPath string, filePostFix string) (string, string, error) {
 	backupLocation := fmt.Sprintf("%v/%v-%v", tmpPath, plan.Name, filePostFix)
 	archive := backupLocation + ".gz"
+	backupLocation = backupLocation
 	log := fmt.Sprintf("%v/%v-%v.log", tmpPath, plan.Name, filePostFix)
 
-	err := RetrieveFiles(plan.Target["podLabels"].(string), plan.Target["namespace"].(string),
+	err := retrieveFiles(plan.Target["podLabels"].(string), plan.Target["namespace"].(string),
 		plan.Target["paths"].([]interface{}), backupLocation, log)
 
 	if (err != nil) {
 		return archive, log, err
 	}
 
-	return archive, log, nil
+	isEmpty, _ := isDirEmpty(backupLocation)
+
+	if (isEmpty) {
+		return archive, log, errors.New("Not able to retrieve any files")
+	}
+
+	err = createArchiveAndCleanup(backupLocation, log)
+
+	return archive, log, err
 }
 
-func RetrieveFiles(podLabels, namespace string, filePaths []interface{}, backupLocation, logFile string) error {
-	pods, _ := GetPods(podLabels, namespace, logFile)
+func retrieveFiles(podLabels, namespace string, filePaths []interface{}, backupLocation, logFile string) error {
+	pods, _ := getPods(podLabels, namespace, logFile)
 
 	for _, pod := range pods {
-		retrieveFileCommand := fmt.Sprintf("kubectl -n %v cp %v:%v %v", namespace, pod)
+		retrieveFileCommandPart := fmt.Sprintf("kubectl -n %v cp %v:", namespace, pod)
+		backupLocationForPod := backupLocation + "/" + pod + "/"
+		os.MkdirAll(backupLocationForPod, 0755)
 
-		for _, v := range filePaths {
-			retrieveFileCommand = fmt.Sprintf(retrieveFileCommand, v.(string), backupLocation)
+		for _, path := range filePaths {
+			path, _ := sh.Command("sh", "-c", fmt.Sprintf("echo -n %v", path.(string))).CombinedOutput()
+
+			retrieveFileCommand := fmt.Sprintf(retrieveFileCommandPart+"%v %v", string(path), backupLocationForPod)
 
 			output, err := sh.Command("sh", "-c", retrieveFileCommand).CombinedOutput()
 
 			if err != nil {
-				return err;
+				logToFile(logFile, []byte(err.Error()))
 			}
 
 			logToFile(logFile, output)
+		}
+
+		isEmpty, _ := isDirEmpty(backupLocationForPod)
+
+		if isEmpty {
+			os.Remove(backupLocationForPod)
 		}
 	}
 
 	return nil;
 }
 
-func GetPods(podLabels, namespace, logFile string) ([]string, error) {
-	labelsArray := strings.Split(podLabels, " ")
+func getPods(podLabels, namespace, logFile string) ([]string, error) {
+	labelsArray := strings.Split(strings.TrimSpace(podLabels), " ")
 	listPodCommands := fmt.Sprintf("kubectl -n %v get pods -o go-template --template '{{range .items}}"+
 		"{{.metadata.name}}{{\" \"}}{{end}}'", namespace)
 
@@ -61,11 +82,9 @@ func GetPods(podLabels, namespace, logFile string) ([]string, error) {
 
 	outputString := string(output)
 
-	if(len(outputString) == 0) {
+	if (len(outputString) == 0) {
 		return make([]string, 0), nil
 	}
 
-	logToFile(logFile, output)
-
-	return strings.Split(outputString, " "), nil
+	return strings.Split(strings.TrimSpace(outputString), " "), nil
 }

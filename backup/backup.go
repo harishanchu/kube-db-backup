@@ -26,7 +26,7 @@ func Run(plan config.Plan, tmpPath string, storagePath string) (Result, error) {
 	case "solr":
 		archive, log, err = jobs.RunSolrBackup(plan, tmpPath, filePostFix)
 	case "file":
-		fmt.Println("File configuration file")
+		archive, log, err = jobs.RunFileBackup(plan, tmpPath, filePostFix)
 	}
 
 
@@ -59,7 +59,7 @@ func Run(plan config.Plan, tmpPath string, storagePath string) (Result, error) {
 
 	err = sh.Command("mv", log, planDir).Run()
 	if err != nil {
-		return res, errors.Wrapf(err, "moving file from %v to %v failed", log, planDir)
+		logrus.WithField("file", log).WithField("target directory", planDir).Warn("failed to move log file")
 	}
 
 	file := filepath.Join(planDir, res.Name)
@@ -101,7 +101,7 @@ func Run(plan config.Plan, tmpPath string, storagePath string) (Result, error) {
 	}
 
 	if plan.Scheduler.Retention > -1 {
-		err = applyRetention(planDir, plan.Scheduler.Retention)
+		err = applyRetention(planDir, plan.Scheduler.Retention, plan.Scheduler.LogRetention)
 		if err != nil {
 			return res, errors.Wrap(err, "retention job failed")
 		}

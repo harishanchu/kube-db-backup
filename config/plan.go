@@ -26,6 +26,7 @@ type Plan struct {
 type Scheduler struct {
 	Cron      string `yaml:"cron"`
 	Retention int    `yaml:"retention"`
+	LogRetention int    `yaml:"log-retention"`
 	Timeout   int    `yaml:"timeout"`
 }
 

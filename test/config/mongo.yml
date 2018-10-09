@@ -1,13 +1,17 @@
 type: 'mongo'
 target:
-  host: "172.18.7.40"
+  host: "localhost"
   port: 27017
-  database: "mongoclient"
-  username: ""
-  password: ""
+  database: "app"
+  secret:
+    name: 'db-secret'
+    namespace: 'default'
+    usernameItem: 'username'
+    passwordItem: 'password'
 scheduler:
   cron: "*/30 * * * *"
   retention: 5
+  log-retention: 5
   timeout: 60
 s3:
   url: "https://play.minio.io:9000"

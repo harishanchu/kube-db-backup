@@ -6,14 +6,14 @@ import (
 	"github.com/pkg/errors"
 )
 
-func applyRetention(path string, retention int) error {
+func applyRetention(path string, retention, logRetention int) error {
 	gz := fmt.Sprintf("cd %v && rm -f $(ls -1t *.gz | tail -n +%v)", path, retention+1)
 	err := sh.Command("/bin/sh", "-c", gz).Run()
 	if err != nil {
 		return errors.Wrapf(err, "removing old gz files from %v failed", path)
 	}
 
-	log := fmt.Sprintf("cd %v && rm -f $(ls -1t *.log | tail -n +%v)", path, retention+1)
+	log := fmt.Sprintf("cd %v && rm -f $(ls -1t *.log | tail -n +%v)", path, logRetention+1)
 	err = sh.Command("/bin/sh", "-c", log).Run()
 	if err != nil {
 		return errors.Wrapf(err, "removing old log files from %v failed", path)

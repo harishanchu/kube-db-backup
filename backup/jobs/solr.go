@@ -11,7 +11,6 @@ import (
 	"encoding/json"
 	"time"
 	"errors"
-	"os"
 )
 
 type PodToBackup struct {
@@ -49,16 +48,15 @@ func RunSolrBackup(plan config.Plan, tmpPath string, filePostFix string) (string
 	solrCollection := plan.Target["collection"].(string)
 	remoteBackupLocation := "/tmp"
 	remoteBackupName := filePostFix
-	var commandOutput []byte
 
 	podsToBackup := make([]PodToBackup, 0)
 
-	state, err := GetClusterState(zkHost, solrCollection)
+	state, err := getClusterState(zkHost, solrCollection)
 
 	if err != nil {
 		return archive, log, err
 	} else {
-		podsToBackup = RetrievePodsToBackup(state.Collections[solrCollection].Shards)
+		podsToBackup = retrievePodsToBackup(state.Collections[solrCollection].Shards)
 	}
 
 	httpClient := &http.Client{}
@@ -66,7 +64,7 @@ func RunSolrBackup(plan config.Plan, tmpPath string, filePostFix string) (string
 
 	for _, pod := range podsToBackup {
 		t1 := time.Now()
-		resp, err := InitiateReplicaBackup(httpClient, pod.BaseURL, solrCollection, remoteBackupLocation, remoteBackupName)
+		resp, err := initiateReplicaBackup(httpClient, pod.BaseURL, solrCollection, remoteBackupLocation, remoteBackupName)
 
 		if err != nil {
 			return archive, log, err;
@@ -76,16 +74,16 @@ func RunSolrBackup(plan config.Plan, tmpPath string, filePostFix string) (string
 			status := ""
 
 			for status != "success" {
-				if(time.Now().Sub(t1) > backupTimeout) {
+				if (time.Now().Sub(t1) > backupTimeout) {
 					return archive, log, errors.New("Backup execution timedout")
 				}
 
 				time.Sleep(5 * time.Second)
-				status, err = CheckReplicaBackupStatus(httpClient, pod.BaseURL, solrCollection, remoteBackupName)
+				status, err = checkReplicaBackupStatus(httpClient, pod.BaseURL, solrCollection, remoteBackupName)
 			}
 
 			shardBackupLocation := fmt.Sprintf("%v/%v", backupLocation, pod.ShardName)
-			err := RetrieveBackup(pod.podName, pod.podNameSpace, shardBackupLocation, remoteBackupLocation, remoteBackupName, log)
+			err := retrieveBackup(pod.podName, pod.podNameSpace, shardBackupLocation, remoteBackupLocation, remoteBackupName, log)
 
 			if (err != nil) {
 				return archive, log, err;
@@ -93,24 +91,12 @@ func RunSolrBackup(plan config.Plan, tmpPath string, filePostFix string) (string
 		}
 	}
 
-	// create archive
-	createArchiveCommand := fmt.Sprintf("tar -czf %v %v", archive, backupLocation)
-	commandOutput, err = sh.Command("/bin/sh", "-c", createArchiveCommand).CombinedOutput()
-	logToFile(log, commandOutput)
+	err = createArchiveAndCleanup(backupLocation, log)
 
-	if os.RemoveAll(backupLocation) != nil {
-		// show warning
-	}
-
-	// cleanup
-	if err != nil {
-		return archive, log, err
-	}
-
-	return archive, log, nil
+	return archive, log, err
 }
 
-func GetClusterState(host, collection string) (solr.ClusterState, error) {
+func getClusterState(host, collection string) (solr.ClusterState, error) {
 	var solrzk = solr.NewSolrZK(host, "", collection)
 	var err = solrzk.Listen()
 
@@ -122,7 +108,7 @@ func GetClusterState(host, collection string) (solr.ClusterState, error) {
 	}
 }
 
-func RetrievePodsToBackup(shards map[string]solr.Shard) []PodToBackup {
+func retrievePodsToBackup(shards map[string]solr.Shard) []PodToBackup {
 	podsToBackup := make([]PodToBackup, 0)
 
 	for _, shard := range shards {
@@ -165,7 +151,7 @@ func RetrievePodsToBackup(shards map[string]solr.Shard) []PodToBackup {
 	return podsToBackup
 }
 
-func InitiateReplicaBackup(httpClient *http.Client, nodeUri, collection, backupLocation, backupName string) (SolrBackupResponse, error) {
+func initiateReplicaBackup(httpClient *http.Client, nodeUri, collection, backupLocation, backupName string) (SolrBackupResponse, error) {
 	backupUrl := fmt.Sprintf("%s/%s/replication?command=backup&wt=json&location=%s&name=%s",
 		nodeUri, collection, backupLocation, backupName)
 	req, err := http.NewRequest("GET", backupUrl, nil)
@@ -197,7 +183,7 @@ func InitiateReplicaBackup(httpClient *http.Client, nodeUri, collection, backupL
 	return sr, dec.Decode(&sr)
 }
 
-func CheckReplicaBackupStatus(httpClient *http.Client, nodeUri, collection, backupName string) (string, error) {
+func checkReplicaBackupStatus(httpClient *http.Client, nodeUri, collection, backupName string) (string, error) {
 	replicaDetailsUrl := fmt.Sprintf("%s/%s/replication?command=details&wt=json", nodeUri, collection)
 	req, err := http.NewRequest("GET", replicaDetailsUrl, nil)
 	status := ""
@@ -239,7 +225,7 @@ func CheckReplicaBackupStatus(httpClient *http.Client, nodeUri, collection, back
 	return status, err
 }
 
-func RetrieveBackup(podName, podNameSpace, backupLocation, remoteBackupLocation, remoteBackupName, logFile string) error {
+func retrieveBackup(podName, podNameSpace, backupLocation, remoteBackupLocation, remoteBackupName, logFile string) error {
 	careateBkpDirCmd := fmt.Sprintf("mkdir -p %v", backupLocation)
 	backupCopyCmd := fmt.Sprintf("kubectl -n %v cp %v:%v/snapshot.%v %v", podNameSpace, podName,
 		remoteBackupLocation, remoteBackupName, backupLocation)

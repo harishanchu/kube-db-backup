@@ -13,6 +13,7 @@ import (
 	"github.com/harishanchu/kube-backup/db"
 	"github.com/harishanchu/kube-backup/scheduler"
 	"github.com/harishanchu/kube-backup/backup"
+	"github.com/harishanchu/kube-backup/backup/jobs"
 )
 
 var version = "undefined"
@@ -32,12 +33,12 @@ func main() {
 	//verifyApplicationEnvironment()
 
 	plans, err := config.LoadPlans(appConfig.ConfigPath)
-	//plan := plans[0]
-	//archive, log, nil := jobs.RunFileBackup(plan, "/tmp", "helo")
-	//if archive != "" && log != "" {
-	//
-	//}
-	//return;
+	plan := plans[0]
+	archive, log, nil := jobs.RunMongoBackup(plan, "/tmp", "helo")
+	if archive != "" && log != "" {
+
+	}
+	return;
 
 	if err != nil {
 		logrus.Fatal(err)

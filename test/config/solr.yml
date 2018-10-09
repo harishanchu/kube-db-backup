@@ -5,6 +5,7 @@ target:
 scheduler:
   cron: "*/1 * * * *"
   retention: 5
+  log-retention: 5
   timeout: 5
 s3:
   url: "https://play.minio.io:9000"
