@@ -30,3 +30,5 @@ import:
 - package: github.com/go-chi/render
   version: ^1.0.0
 - package: github.com/sendgrid/go-solr
+- package: k8s.io/client-go
+  version: v9.0.0

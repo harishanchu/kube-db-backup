@@ -13,11 +13,10 @@ import (
 	"github.com/harishanchu/kube-backup/db"
 	"github.com/harishanchu/kube-backup/scheduler"
 	"github.com/harishanchu/kube-backup/backup"
-	"github.com/harishanchu/kube-backup/backup/jobs"
+	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
 var version = "undefined"
-
 func main() {
 	var appConfig = &config.AppConfig{}
 	flag.StringVar(&appConfig.LogLevel, "LogLevel", "debug", "logging threshold level: debug|info|warn|error|fatal|panic")
@@ -30,16 +29,9 @@ func main() {
 	setLogLevel(appConfig.LogLevel)
 	logrus.Infof("Starting with config: %+v", appConfig)
 
-	//verifyApplicationEnvironment()
+	verifyApplicationEnvironment()
 
 	plans, err := config.LoadPlans(appConfig.ConfigPath)
-	plan := plans[0]
-	archive, log, nil := jobs.RunMongoBackup(plan, "/tmp", "helo")
-	if archive != "" && log != "" {
-
-	}
-	return;
-
 	if err != nil {
 		logrus.Fatal(err)
 	}
@@ -71,29 +63,37 @@ func main() {
 }
 
 func verifyApplicationEnvironment() {
-	info, err := backup.CheckMongodump()
-	if err != nil {
-		logrus.Fatal(err)
-	}
-	logrus.Info(info)
+	if (config.AppEnv == "production") {
+		info, err := backup.CheckMongodump()
+		if err != nil {
+			logrus.Fatal(err)
+		}
+		logrus.Info(info)
 
-	info, err = backup.CheckMinioClient()
-	if err != nil {
-		logrus.Fatal(err)
-	}
-	logrus.Info(info)
+		info, err = backup.CheckMinioClient()
+		if err != nil {
+			logrus.Fatal(err)
+		}
+		logrus.Info(info)
 
-	info, err = backup.CheckGCloudClient()
-	if err != nil {
-		logrus.Fatal(err)
-	}
-	logrus.Info(info)
+		info, err = backup.CheckGCloudClient()
+		if err != nil {
+			logrus.Fatal(err)
+		}
+		logrus.Info(info)
 
-	info, err = backup.CheckAzureClient()
-	if err != nil {
-		logrus.Fatal(err)
+		info, err = backup.CheckAzureClient()
+		if err != nil {
+			logrus.Fatal(err)
+		}
+		logrus.Info(info)
+
+		info, err = backup.CheckKubeClient()
+		if err != nil {
+			logrus.Fatal(err)
+		}
+		logrus.Info(info)
 	}
-	logrus.Info(info)
 }
 
 func setLogLevel(levelName string) {

@@ -58,3 +58,16 @@ func CheckAzureClient() (string, error) {
 
 	return strings.Replace(string(output), "\n", " ", -1), nil
 }
+
+func CheckKubeClient() (string, error) {
+	output, err := sh.Command("/bin/sh", "-c", "kubectl version").CombinedOutput()
+	if err != nil {
+		ex := ""
+		if len(output) > 0 {
+			ex = strings.Replace(string(output), "\n", " ", -1)
+		}
+		return "", errors.Wrapf(err, "kubectl failed %v", ex)
+	}
+
+	return strings.Replace(string(output), "\n", " ", -1), nil
+}

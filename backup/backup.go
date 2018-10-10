@@ -11,6 +11,10 @@ import (
 	"github.com/harishanchu/kube-backup/config"
 	"github.com/pkg/errors"
 	"github.com/harishanchu/kube-backup/backup/jobs"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/kubernetes"
+	"flag"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 func Run(plan config.Plan, tmpPath string, storagePath string) (Result, error) {
@@ -19,16 +23,16 @@ func Run(plan config.Plan, tmpPath string, storagePath string) (Result, error) {
 	var archive, log string
 	var err error
 	var filePostFix = formatTimeForFilePostFix(t1.UTC());
+	k8Client := getKubernetesClient()
 
 	switch plan.Type {
 	case "mongo":
-		archive, log, err = jobs.RunMongoBackup(plan, tmpPath, filePostFix)
+		archive, log, err = jobs.RunMongoBackup(plan, k8Client, tmpPath, filePostFix)
 	case "solr":
 		archive, log, err = jobs.RunSolrBackup(plan, tmpPath, filePostFix)
 	case "file":
 		archive, log, err = jobs.RunFileBackup(plan, tmpPath, filePostFix)
 	}
-
 
 	res := Result{
 		Plan:      plan.Name,
@@ -115,4 +119,47 @@ func Run(plan config.Plan, tmpPath string, storagePath string) (Result, error) {
 
 func formatTimeForFilePostFix(t time.Time) string {
 	return t.Format("20060102030405000")
+}
+
+func getKubernetesClient() *kubernetes.Clientset {
+	var kflags *string
+	var err error
+	var kubeconfig *rest.Config
+	if (config.AppEnv == "production") {
+		// creates the in-cluster config
+		kubeconfig, err = rest.InClusterConfig()
+	} else {
+
+		if home := homeDir(); home != "" {
+			kflags = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
+		} else {
+			kflags = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
+		}
+
+		flag.Parse()
+
+		// use the current context in kubeconfig
+		kubeconfig, err = clientcmd.BuildConfigFromFlags("", *kflags)
+	}
+
+
+	if err != nil {
+		panic(err.Error())
+	}
+
+	// creates the clientset
+	k8Client, err := kubernetes.NewForConfig(kubeconfig)
+
+	if err != nil {
+		panic(err.Error())
+	}
+
+	return k8Client
+}
+
+func homeDir() string {
+	if h := os.Getenv("HOME"); h != "" {
+		return h
+	}
+	return os.Getenv("USERPROFILE") // windows
 }

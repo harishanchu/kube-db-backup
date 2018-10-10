@@ -7,14 +7,18 @@ import (
 	"github.com/codeskyblue/go-sh"
 	"strings"
 	"github.com/pkg/errors"
-	"encoding/json"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	k8corev1 "k8s.io/api/core/v1"
+	k8clientcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
-func RunMongoBackup(plan config.Plan, tmpPath string, filePostFix string) (string, string, error) {
+func RunMongoBackup(plan config.Plan, k8Client *kubernetes.Clientset, tmpPath string, filePostFix string) (string, string, error) {
 	archive := fmt.Sprintf("%v/%v-%v.gz", tmpPath, plan.Name, filePostFix)
 	log := fmt.Sprintf("%v/%v-%v.log", tmpPath, plan.Name, filePostFix)
+	k8coreV1Client := k8Client.CoreV1();
 
-	username, password, _ := retrieveCredentials(plan.Target["secret"])
+	username, password, _ := retrieveCredentials(k8coreV1Client, plan.Target["secret"])
 
 	dump := fmt.Sprintf("mongodump --archive=%v --gzip --host %v --port %v ",
 		archive, plan.Target["host"].(string), plan.Target["port"].(string))
@@ -41,37 +45,22 @@ func RunMongoBackup(plan config.Plan, tmpPath string, filePostFix string) (strin
 	return archive, log, nil
 }
 
-func retrieveCredentials(secret interface{}) (string, string, error){
+func retrieveCredentials(k8Client k8clientcorev1.CoreV1Interface, secret interface{}) (string, string, error){
 	username := ""
 	password := ""
 	secretMap := secret.(map[interface{}]interface{})
 
 	secretName := secretMap["name"].(string)
 	secretNameSpace := secretMap["namespace"].(string)
-	//usernmeItem := secretMap["usernmeItem"].(string)
-	//passwordItem := secretMap["passwordItem"].(string)
+	usernmeItem := secretMap["usernameItem"].(string)
+	passwordItem := secretMap["passwordItem"].(string)
 
-	retrieveSecretCommand := fmt.Sprintf("echo '{';"+
-	"for row in $(kubectl get secret %v -o json -n %v | jq -c '.data | to_entries[]'); do "+
-	"KEY=$(echo ${row} | jq -r '.key');"+
-	"DECODED=$(echo ${row} | jq -r '.value' | base64 --decode);"+
-	"echo \"\\\"$KEY\\\": \\\"$DECODED\\\",\";"+
-	"done;"+
-	"echo '}';", secretName, secretNameSpace)
-
-	output, err := sh.Command("sh", "-c", retrieveSecretCommand).CombinedOutput()
+	secret, err := k8Client.Secrets(secretNameSpace).Get(secretName, v1.GetOptions{})
+	secretmap :=secret.(*k8corev1.Secret)
 
 	if err != nil {
 		return username, password, err
 	}
 
-	parsedSecret := new(interface{})
-
-	err = json.Unmarshal(output, &parsedSecret)
-
-	if err != nil {
-		return username, password, err
-	}
-
-	return username, password, err
+	return string(secretmap.Data[usernmeItem]), string(secretmap.Data[passwordItem]), err
 }
