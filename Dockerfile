@@ -1,20 +1,20 @@
-FROM alpine:edge
+FROM alpine:3.8
 
 ARG BUILD_DATE
 ARG VCS_REF
 ARG VERSION
 
-ENV MONGODB_TOOLS_VERSION 4.0.0-r0
+ENV MONGODB_TOOLS_VERSION 3.6.4-r0
 ENV GOOGLE_CLOUD_SDK_VERSION 181.0.0
 ENV AZURE_CLI_VERSION 2.0.44
 ENV PATH /root/google-cloud-sdk/bin:$PATH
 
 LABEL org.label-schema.build-date=$BUILD_DATE \
-      org.label-schema.name="kube-db-backup" \
+      org.label-schema.name="kube-backup" \
       org.label-schema.description="Kuberentes backup automation tool" \
-      org.label-schema.url="https://github.com/harishanchu/kube-db-backup" \
+      org.label-schema.url="https://github.com/harishanchu/kube-backup" \
       org.label-schema.vcs-ref=$VCS_REF \
-      org.label-schema.vcs-url="https://github.com/harishanchu/kube-db-backup" \
+      org.label-schema.vcs-url="https://github.com/harishanchu/kube-backup" \
       org.label-schema.vendor="harishanchu.com" \
       org.label-schema.version=$VERSION \
       org.label-schema.schema-version="1.0"
@@ -51,8 +51,8 @@ RUN apk add py-pip && \
   pip install azure-cli==${AZURE_CLI_VERSION} && \
   apk del --purge build
 
-COPY kube-db-backup    .
+COPY kube-backup    .
 
 VOLUME ["/config", "/storage", "/tmp", "/data"]
 
-ENTRYPOINT [ "./kube-db-backup" ]
+ENTRYPOINT [ "./kube-backup" ]

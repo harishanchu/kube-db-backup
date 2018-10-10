@@ -1,1 +1,1 @@
-# kube-db-backup
+# kube-backup

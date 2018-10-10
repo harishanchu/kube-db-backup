@@ -2,11 +2,11 @@ FROM golang:1.10.1-alpine
 
 ARG APP_VERSION=unkown
 
-ADD . /go/src/github.com/harishanchu/kube-db-backup
+ADD . /go/src/github.com/harishanchu/kube-backup
 
-WORKDIR /go/src/github.com/harishanchu/kube-db-backup
+WORKDIR /go/src/github.com/harishanchu/kube-backup
 
 RUN mkdir -p /dist
-RUN go build -ldflags "-X main.version=$APP_VERSION" -o /dist/kube-db-backup github.com/harishanchu/kube-db-backup
+RUN go build -ldflags "-X main.version=$APP_VERSION" -o /dist/kube-backup github.com/harishanchu/kube-backup
 
 CMD ["ls"]

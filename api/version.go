@@ -19,8 +19,8 @@ func appVersionCtx(version string) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			data := appVersion{
-				"kube-db-backup_version": version,
-				"repository":   "github.com/harishanchu/kube-db-backup",
+				"kube-backup_version": version,
+				"repository":   "github.com/harishanchu/kube-backup",
 				"go_version":   runtime.Version(),
 				"os":           runtime.GOOS,
 				"arch":         runtime.GOARCH,

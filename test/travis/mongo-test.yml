@@ -1,3 +1,4 @@
+type: 'mongo'
 scheduler:
   cron: "* * * * *"
   retention: 5

@@ -7,7 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/harishanchu/kube-db-backup/config"
+	"github.com/harishanchu/kube-backup/config"
 	"github.com/pkg/errors"
 )
 

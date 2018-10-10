@@ -5,13 +5,13 @@ import (
 	"net/smtp"
 	"strings"
 
-	"github.com/harishanchu/kube-db-backup/config"
+	"github.com/harishanchu/kube-backup/config"
 	"github.com/pkg/errors"
 )
 
 func sendEmailNotification(subject string, body string, config *config.SMTP) error {
 
-	msg := "From: \"Kube-db-backup\" <" + config.From + ">\r\n" +
+	msg := "From: \"kube-backup\" <" + config.From + ">\r\n" +
 		"To: " + strings.Join(config.To, ", ") + "\r\n" +
 		"Subject: " + subject + "\r\n\r\n" +
 		body + "\r\n"

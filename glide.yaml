@@ -1,4 +1,4 @@
-package: github.com/harishanchu/kube-db-backup
+package: github.com/harishanchu/kube-backup
 import:
 - package: github.com/Sirupsen/logrus
   version: ^0.11.5
@@ -29,3 +29,6 @@ import:
   version: ^3.1.4
 - package: github.com/go-chi/render
   version: ^1.0.0
+- package: github.com/sendgrid/go-solr
+- package: k8s.io/client-go
+  version: v9.0.0

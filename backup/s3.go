@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/codeskyblue/go-sh"
-	"github.com/harishanchu/kube-db-backup/config"
+	"github.com/harishanchu/kube-backup/config"
 	"github.com/pkg/errors"
 )
 

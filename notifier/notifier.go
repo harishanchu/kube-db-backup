@@ -1,6 +1,6 @@
 package notifier
 
-import "github.com/harishanchu/kube-db-backup/config"
+import "github.com/harishanchu/kube-backup/config"
 
 func SendNotification(subject string, body string, warn bool, plan config.Plan) error {
 

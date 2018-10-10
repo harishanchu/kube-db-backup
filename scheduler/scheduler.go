@@ -6,11 +6,11 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/dustin/go-humanize"
-	"github.com/harishanchu/kube-db-backup/backup"
-	"github.com/harishanchu/kube-db-backup/config"
-	"github.com/harishanchu/kube-db-backup/db"
-	"github.com/harishanchu/kube-db-backup/metrics"
-	"github.com/harishanchu/kube-db-backup/notifier"
+	"github.com/harishanchu/kube-backup/backup"
+	"github.com/harishanchu/kube-backup/config"
+	"github.com/harishanchu/kube-backup/db"
+	"github.com/harishanchu/kube-backup/metrics"
+	"github.com/harishanchu/kube-backup/notifier"
 	"github.com/pkg/errors"
 	"github.com/robfig/cron"
 )
@@ -29,7 +29,7 @@ func New(plans []config.Plan, conf *config.AppConfig, stats *db.StatusStore) *Sc
 		Plans:   plans,
 		Config:  conf,
 		Stats:   stats,
-		metrics: metrics.New("mgob", "scheduler"),
+		metrics: metrics.New("kubedbbackup", "scheduler"),
 	}
 
 	return s

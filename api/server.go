@@ -7,8 +7,8 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
-	"github.com/harishanchu/kube-db-backup/config"
-	"github.com/harishanchu/kube-db-backup/db"
+	"github.com/harishanchu/kube-backup/config"
+	"github.com/harishanchu/kube-backup/db"
 	"strings"
 )
 
